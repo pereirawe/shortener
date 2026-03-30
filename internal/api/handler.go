@@ -19,8 +19,8 @@ import (
 
 const (
 	shortCodeLength = 7
-	cachePrefix     = "url:"
-	cacheTTL        = 24 * time.Hour
+	cachePrefix     = "shortener:url:"
+	cacheTTL        = 2 * 7 * 24 * time.Hour
 )
 
 // URLStore defines the persistence interface for URL records
