@@ -1,0 +1,48 @@
+meta {
+  name: Create Short URL
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/shorten
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "original_url": "https://www.example.com/very/long/url/that/needs/shortening"
+  }
+}
+
+vars:post-response {
+  shortCode: res.body.short_code
+}
+
+docs {
+  # Create Short URL
+  
+  Receives a long URL and returns a shortened version.
+  
+  ## Request Body
+  
+  | Field        | Type   | Required | Description          |
+  |--------------|--------|----------|----------------------|
+  | original_url | string | yes      | Full URL to shorten  |
+  
+  ## Response
+  
+  ```json
+  {
+    "short_code": "abc1234",
+    "short_url": "http://localhost:8080/abc1234",
+    "original_url": "https://www.example.com/very/long/url/that/needs/shortening"
+  }
+  ```
+  
+  ## Errors
+  
+  - `400` — `original_url` is missing or invalid (must start with http:// or https://)
+  - `500` — Internal error while saving
+}

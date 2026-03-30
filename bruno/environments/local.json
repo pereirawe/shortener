@@ -1,0 +1,16 @@
+{
+  "version": "1",
+  "name": "local",
+  "variables": [
+    {
+      "name": "baseUrl",
+      "value": "http://localhost:8080",
+      "enabled": true
+    },
+    {
+      "name": "shortCode",
+      "value": "abc1234",
+      "enabled": true
+    }
+  ]
+}
