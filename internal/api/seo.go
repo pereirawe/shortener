@@ -56,18 +56,45 @@ func fetchSEO(rawURL string) SEOData {
 		return SEOData{Available: true}
 	}
 
-	data := SEOData{Available: true}
-	parseNode(doc, &data)
-	return data
+	raw := rawSEO{}
+	parseNode(doc, &raw)
+	return raw.toSEOData()
+}
+
+// rawSEO is an intermediate holder used while walking the DOM.
+// OG properties have priority over plain HTML tags.
+type rawSEO struct {
+	htmlTitle   string
+	htmlDesc    string
+	ogTitle     string
+	ogDesc      string
+	ogImage     string
+}
+
+func (r rawSEO) toSEOData() SEOData {
+	title := r.ogTitle
+	if title == "" {
+		title = r.htmlTitle
+	}
+	desc := r.ogDesc
+	if desc == "" {
+		desc = r.htmlDesc
+	}
+	return SEOData{
+		Available:   true,
+		Title:       title,
+		Description: desc,
+		Image:       r.ogImage,
+	}
 }
 
 // parseNode walks the HTML node tree to extract SEO meta tags and the title.
-func parseNode(n *html.Node, data *SEOData) {
+func parseNode(n *html.Node, raw *rawSEO) {
 	if n.Type == html.ElementNode {
 		switch strings.ToLower(n.Data) {
 		case "title":
-			if n.FirstChild != nil && data.Title == "" {
-				data.Title = strings.TrimSpace(n.FirstChild.Data)
+			if n.FirstChild != nil && raw.htmlTitle == "" {
+				raw.htmlTitle = strings.TrimSpace(n.FirstChild.Data)
 			}
 		case "meta":
 			name := attrVal(n, "name")
@@ -75,22 +102,23 @@ func parseNode(n *html.Node, data *SEOData) {
 			content := attrVal(n, "content")
 
 			switch {
-			case strings.EqualFold(name, "description") && data.Description == "":
-				data.Description = content
-			case strings.EqualFold(prop, "og:title") && data.Title == "":
-				data.Title = content
-			case strings.EqualFold(prop, "og:description") && data.Description == "":
-				data.Description = content
-			case strings.EqualFold(prop, "og:image") && data.Image == "":
-				data.Image = content
+			case strings.EqualFold(name, "description") && raw.htmlDesc == "":
+				raw.htmlDesc = content
+			case strings.EqualFold(prop, "og:title") && raw.ogTitle == "":
+				raw.ogTitle = content
+			case strings.EqualFold(prop, "og:description") && raw.ogDesc == "":
+				raw.ogDesc = content
+			case strings.EqualFold(prop, "og:image") && raw.ogImage == "":
+				raw.ogImage = content
 			}
 		}
 	}
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		parseNode(c, data)
+		parseNode(c, raw)
 	}
 }
+
 
 // attrVal returns the value of the named attribute from an HTML node.
 func attrVal(n *html.Node, name string) string {

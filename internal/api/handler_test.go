@@ -111,8 +111,17 @@ func TestHealth(t *testing.T) {
 // ─── ShortenURL — happy path ──────────────────────────────────────────────────
 
 func TestShortenURL_Success_AutoCode(t *testing.T) {
+	// Serve a minimal HTML page so the SEO fetch completes instantly
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`<html><head><title>Hello</title></head><body></body></html>`))
+	}))
+	defer target.Close()
+
 	h := makeHandler()
-	w := shortenRequest(t, h, `{"original_url": "https://example.com/very-long-url"}`)
+	body, _ := json.Marshal(map[string]string{"original_url": target.URL + "/path"})
+	w := shortenRequest(t, h, string(body))
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d — body: %s", w.Code, w.Body.String())
@@ -122,19 +131,31 @@ func TestShortenURL_Success_AutoCode(t *testing.T) {
 	if resp.ShortCode == "" {
 		t.Error("expected non-empty short_code")
 	}
-	if resp.OriginalURL != "https://example.com/very-long-url" {
-		t.Errorf("unexpected original_url: %s", resp.OriginalURL)
-	}
 	if resp.ShortURL == "" {
 		t.Error("expected non-empty short_url")
 	}
-	// url_available is present (may be true or false depending on network – just check it's set)
-	// SEO fields are optional, no hard assertion
+	if !resp.URLAvailable {
+		t.Error("expected url_available=true for reachable URL")
+	}
+	if resp.SEOTitle != "Hello" {
+		t.Errorf("expected seo_title=Hello, got %q", resp.SEOTitle)
+	}
 }
 
 func TestShortenURL_CustomCode_Success(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`<html><head><title>Test</title></head></html>`))
+	}))
+	defer target.Close()
+
 	h := makeHandler()
-	w := shortenRequest(t, h, `{"original_url": "https://example.com", "custom_code": "MeuLink"}`)
+	body, _ := json.Marshal(map[string]string{
+		"original_url": target.URL,
+		"custom_code":  "MeuLink",
+	})
+	w := shortenRequest(t, h, string(body))
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d — body: %s", w.Code, w.Body.String())
@@ -150,9 +171,19 @@ func TestShortenURL_CustomCode_Success(t *testing.T) {
 }
 
 func TestShortenURL_CustomCode_MaxLength(t *testing.T) {
+	// 12 chars exactly — must be accepted
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer target.Close()
+
 	h := makeHandler()
-	// exactly 12 chars — must pass
-	w := shortenRequest(t, h, `{"original_url": "https://example.com", "custom_code": "abcdefghijkl"}`)
+	body, _ := json.Marshal(map[string]string{
+		"original_url": target.URL,
+		"custom_code":  "abcdefghijkl",
+	})
+	w := shortenRequest(t, h, string(body))
 	if w.Code != http.StatusCreated {
 		t.Fatalf("12-char code should succeed, got %d — %s", w.Code, w.Body.String())
 	}
@@ -162,7 +193,7 @@ func TestShortenURL_CustomCode_MaxLength(t *testing.T) {
 
 func TestShortenURL_CustomCode_TooLong(t *testing.T) {
 	h := makeHandler()
-	// 13 chars
+	// 13 chars → must fail before any network call
 	w := shortenRequest(t, h, `{"original_url": "https://example.com", "custom_code": "abcdefghijklm"}`)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400 for too-long code, got %d", w.Code)
@@ -240,17 +271,24 @@ func TestShortenURL_InvalidJSON(t *testing.T) {
 	}
 }
 
-// ─── ShortenURL — SEO / warning fields ───────────────────────────────────────
+// ─── ShortenURL — SEO / url_available / warning ───────────────────────────────
 
 func TestShortenURL_ResponseHasURLAvailableField(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`<html><head><title>T</title></head></html>`))
+	}))
+	defer target.Close()
+
 	h := makeHandler()
-	w := shortenRequest(t, h, `{"original_url": "https://example.com"}`)
+	body, _ := json.Marshal(map[string]string{"original_url": target.URL})
+	w := shortenRequest(t, h, string(body))
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d", w.Code)
 	}
 
-	// Decode as a raw map so we can assert the key is present regardless of value
 	var raw map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&raw); err != nil {
 		t.Fatalf("decode error: %v", err)
@@ -261,9 +299,15 @@ func TestShortenURL_ResponseHasURLAvailableField(t *testing.T) {
 }
 
 func TestShortenURL_UnavailableURL_HasWarning(t *testing.T) {
-	// Use an obviously unreachable address (RFC 5737 documentation IP, port 1)
+	// Serve a 503 — simulates an unavailable destination without network timeouts
+	unavailable := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer unavailable.Close()
+
 	h := makeHandler()
-	w := shortenRequest(t, h, `{"original_url": "http://192.0.2.1:1/unreachable"}`)
+	body, _ := json.Marshal(map[string]string{"original_url": unavailable.URL})
+	w := shortenRequest(t, h, string(body))
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201 even for unavailable URL, got %d — %s", w.Code, w.Body.String())
@@ -271,10 +315,45 @@ func TestShortenURL_UnavailableURL_HasWarning(t *testing.T) {
 
 	resp := decodeResponse(t, w)
 	if resp.URLAvailable {
-		t.Error("expected url_available=false for unreachable URL")
+		t.Error("expected url_available=false for 503 URL")
 	}
 	if resp.Warning == "" {
-		t.Error("expected non-empty warning for unreachable URL")
+		t.Error("expected non-empty warning for unavailable URL")
+	}
+}
+
+func TestShortenURL_SEO_OGTags(t *testing.T) {
+	// Verify that og:title takes precedence and og:image is captured
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`
+<html><head>
+  <title>Fallback Title</title>
+  <meta property="og:title" content="OG Title"/>
+  <meta property="og:description" content="OG Desc"/>
+  <meta property="og:image" content="https://example.com/img.png"/>
+</head></html>`))
+	}))
+	defer target.Close()
+
+	h := makeHandler()
+	body, _ := json.Marshal(map[string]string{"original_url": target.URL})
+	w := shortenRequest(t, h, string(body))
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", w.Code)
+	}
+
+	resp := decodeResponse(t, w)
+	if resp.SEOTitle != "OG Title" {
+		t.Errorf("expected seo_title=OG Title, got %q", resp.SEOTitle)
+	}
+	if resp.SEODescription != "OG Desc" {
+		t.Errorf("expected seo_description=OG Desc, got %q", resp.SEODescription)
+	}
+	if resp.SEOImage != "https://example.com/img.png" {
+		t.Errorf("expected seo_image=https://example.com/img.png, got %q", resp.SEOImage)
 	}
 }
 
