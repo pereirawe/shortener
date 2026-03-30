@@ -10,31 +10,27 @@ get {
   auth: none
 }
 
-vars:pre-request {
-  shortCode: abc1234
-}
-
 docs {
   # Redirect Short URL
-
+  
   Resolves a short code and redirects (HTTP 302) to the original URL.
-
+  
   ## Path Parameter
-
+  
   | Parameter | Type   | Description                        |
   |-----------|--------|------------------------------------|
   | shortCode | string | Short code generated during POST   |
-
+  
   ## Behavior
-
+  
   1. Checks Redis cache first (fast path)
   2. Falls back to PostgreSQL if not cached
   3. Repopulates Redis cache from DB
   4. Returns `302 Found` with `Location` header pointing to the original URL
   5. Increments click counter asynchronously
-
+  
   ## Errors
-
+  
   - `404` — Short code not found
   - `500` — Internal error while fetching
 }

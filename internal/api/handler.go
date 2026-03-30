@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -18,10 +19,14 @@ import (
 )
 
 const (
-	shortCodeLength = 7
-	cachePrefix     = "shortener:url:"
-	cacheTTL        = 2 * 7 * 24 * time.Hour
+	shortCodeLength  = 7
+	cachePrefix      = "shortener:url:"
+	cacheTTL         = 2 * 7 * 24 * time.Hour
+	maxCustomCodeLen = 12
 )
+
+// customCodeRegex allows only letters and digits (no spaces or special chars)
+var customCodeRegex = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 
 // URLStore defines the persistence interface for URL records
 type URLStore interface {
@@ -84,16 +89,60 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortCode, err := h.generateUniqueCode(r.Context())
-	if err != nil {
-		log.Printf("ERROR generating short code: %v", err)
-		writeError(w, http.StatusInternalServerError, "failed to generate short code")
-		return
+	var shortCode string
+	if req.CustomCode != "" {
+		code := req.CustomCode
+
+		if len(code) > maxCustomCodeLen {
+			writeError(w, http.StatusBadRequest,
+				fmt.Sprintf("custom_code must be at most %d characters", maxCustomCodeLen))
+			return
+		}
+
+		if strings.ContainsAny(code, " \t\n\r") {
+			writeError(w, http.StatusBadRequest, "custom_code must not contain spaces")
+			return
+		}
+
+		if !customCodeRegex.MatchString(code) {
+			writeError(w, http.StatusBadRequest,
+				"custom_code must contain only letters (a-z, A-Z) and digits (0-9)")
+			return
+		}
+
+		exists, err := h.store.ExistsByShortCode(code)
+		if err != nil {
+			log.Printf("ERROR checking custom code: %v", err)
+			writeError(w, http.StatusInternalServerError, "failed to validate custom_code")
+			return
+		}
+		if exists {
+			writeError(w, http.StatusConflict,
+				fmt.Sprintf("custom_code '%s' is already in use", code))
+			return
+		}
+
+		shortCode = code
+	} else {
+		var err error
+		shortCode, err = h.generateUniqueCode(r.Context())
+		if err != nil {
+			log.Printf("ERROR generating short code: %v", err)
+			writeError(w, http.StatusInternalServerError, "failed to generate short code")
+			return
+		}
 	}
 
+	seo := fetchSEO(req.OriginalURL)
+	log.Printf("INFO SEO fetch for %s — available=%v title=%q", req.OriginalURL, seo.Available, seo.Title)
+
 	urlRecord := &model.URL{
-		ShortCode:   shortCode,
-		OriginalURL: req.OriginalURL,
+		ShortCode:      shortCode,
+		OriginalURL:    req.OriginalURL,
+		URLAvailable:   seo.Available,
+		SEOTitle:       seo.Title,
+		SEODescription: seo.Description,
+		SEOImage:       seo.Image,
 	}
 	if err := h.store.Create(urlRecord); err != nil {
 		log.Printf("ERROR saving URL: %v", err)
@@ -105,11 +154,20 @@ func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		log.Printf("WARN failed to cache URL in Redis: %v", err)
 	}
 
-	writeJSON(w, http.StatusCreated, dto.CreateURLResponse{
-		ShortCode:   shortCode,
-		ShortURL:    fmt.Sprintf("%s/%s", h.baseURL, shortCode),
-		OriginalURL: req.OriginalURL,
-	})
+	resp := dto.CreateURLResponse{
+		ShortCode:      shortCode,
+		ShortURL:       fmt.Sprintf("%s/%s", h.baseURL, shortCode),
+		OriginalURL:    req.OriginalURL,
+		URLAvailable:   seo.Available,
+		SEOTitle:       seo.Title,
+		SEODescription: seo.Description,
+		SEOImage:       seo.Image,
+	}
+	if !seo.Available {
+		resp.Warning = "the destination URL appears to be temporarily unavailable; the short link was created anyway"
+	}
+
+	writeJSON(w, http.StatusCreated, resp)
 }
 
 // RedirectURL resolves a short code and redirects to the original URL
