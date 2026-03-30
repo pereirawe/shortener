@@ -1,4 +1,3 @@
-version: "3.8"
 
 services:
     shortener-redis:
@@ -17,8 +16,28 @@ services:
             timeout: 3s
             retries: 5
 
+    shortener-postgres:
+        image: postgres:15-alpine
+        container_name: shortener-postgres
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:-shortener_user}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shortener_password}
+            POSTGRES_DB: ${POSTGRES_DB:-shortener_db}
+        ports:
+            - "5433:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        networks:
+            - shortener-network
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 3s
+            retries: 5
+
 volumes:
     redis_data:
+    postgres_data:
 
 networks:
     shortener-network:
