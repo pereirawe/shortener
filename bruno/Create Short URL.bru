@@ -12,7 +12,8 @@ post {
 
 body:json {
   {
-    "original_url": "https://produto.mercadolivre.com.br/MLB-5972208662-sapatos-femininos-de-malha-macia-sem-cadarco-antiderrapante-_JM?searchVariation=193433060051#polycard_client=recommendations_home_navigation-recommendations&reco_backend=machinalis-homes-univb-equivalent-offer&reco_client=home_navigation-recommendations&reco_item_pos=0&reco_backend_type=function&reco_id=82c0a633-0190-4378-9ad4-08427ea9df0e&c_id=/home/navigation-recommendations/element&c_uid=04d144d5-c2ff-46c7-adb1-b9a46ff214b0"
+    "original_url": "https://produto.mercadolivre.com.br/MLB-5972208662-sapatos-femininos-de-malha-macia-sem-cadarco-antiderrapante-_JM",
+    "custom_code": "sapatilha"
   }
 }
 
@@ -22,27 +23,46 @@ vars:post-response {
 
 docs {
   # Create Short URL
-  
-  Receives a long URL and returns a shortened version.
-  
+
+  Recebe uma URL longa e retorna uma versão encurtada.
+  Antes de salvar, faz uma requisição à URL original para validar a disponibilidade e extrair metadados SEO.
+
   ## Request Body
-  
-  | Field        | Type   | Required | Description          |
-  |--------------|--------|----------|----------------------|
-  | original_url | string | yes      | Full URL to shorten  |
-  
-  ## Response
-  
+
+  | Campo        | Tipo   | Obrigatório | Descrição                                                        |
+  |--------------|--------|-------------|------------------------------------------------------------------|
+  | original_url | string | sim         | URL completa a ser encurtada (deve começar com http:// ou https://) |
+  | custom_code  | string | não         | Código personalizado (só letras e dígitos, máx. 12 caracteres)  |
+
+  ## Response 201
+
   ```json
   {
-    "short_code": "abc1234",
-    "short_url": "http://localhost:8080/abc1234",
-    "original_url": "https://www.example.com/very/long/url/that/needs/shortening"
+    "short_code": "sapatilha",
+    "short_url": "http://localhost:8080/sapatilha",
+    "original_url": "https://produto.mercadolivre.com.br/...",
+    "url_available": true,
+    "seo_title": "Sapatos Femininos | MercadoLivre",
+    "seo_description": "...",
+    "seo_image": "https://..."
   }
   ```
-  
+
+  Quando a URL de destino estiver inacessível, `url_available` será `false` e virá um campo `warning`:
+
+  ```json
+  {
+    "url_available": false,
+    "warning": "the destination URL appears to be temporarily unavailable; the short link was created anyway"
+  }
+  ```
+
   ## Errors
-  
-  - `400` — `original_url` is missing or invalid (must start with http:// or https://)
-  - `500` — Internal error while saving
+
+  | Status | Motivo                                                              |
+  |--------|---------------------------------------------------------------------|
+  | 400    | `original_url` ausente, inválida ou sem prefixo http/https         |
+  | 400    | `custom_code` com espaço, caractere especial ou mais de 12 chars   |
+  | 409    | `custom_code` já está em uso                                       |
+  | 500    | Erro interno ao salvar                                              |
 }
