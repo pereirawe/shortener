@@ -1,6 +1,6 @@
 ## Known Issues
 
--### 1. Insecure random generation
+### 1. Insecure random generation
 - Status: open
 - Remote: -
 
@@ -10,7 +10,7 @@
 - Impact: Predictable codes and possible collisions
 - Suggested fix: Use crypto/rand
 
--### 2. Missing timeout in SEO fetch
+### 2. Missing timeout in SEO fetch
 - Status: open
 - Remote: -
 
@@ -20,7 +20,7 @@
 - Impact: Request may hang indefinitely
 - Suggested fix: Use http.Client with timeout and context
 
--### 3. Weak URL validation
+### 3. Weak URL validation
 - Status: open
 - Remote: -
 
@@ -30,7 +30,7 @@
 - Impact: Invalid or malicious URLs accepted
 - Suggested fix: Use net/url.Parse and validate host
 
--### 4. Potential SSRF vulnerability
+### 4. Potential SSRF vulnerability
 - Status: open
 - Remote: -
 
@@ -40,7 +40,7 @@
 - Impact: Internal network exposure
 - Suggested fix: Block private IP ranges
 
--### 5. No rate limiting
+### 5. No rate limiting
 - Status: open
 - Remote: -
 
@@ -50,7 +50,7 @@
 - Impact: Abuse and resource exhaustion
 - Suggested fix: Add middleware (token bucket / Redis)
 
--### 6. Cache inconsistency
+### 6. Cache inconsistency
 - Status: open
 - Remote: -
 
@@ -60,7 +60,7 @@
 - Impact: Loss of metadata consistency
 - Suggested fix: Cache full response object
 
--### 7. Uncontrolled goroutines
+### 7. Uncontrolled goroutines
 - Status: open
 - Remote: -
 
@@ -70,7 +70,7 @@
 - Impact: Resource leaks under load
 - Suggested fix: Use worker queue or sync handling
 
--### 8. Business logic in handler
+### 8. Business logic in handler
 - Status: open
 - Remote: -
 
@@ -80,7 +80,7 @@
 - Impact: Hard to test and maintain
 - Suggested fix: Introduce service layer
 
--### 9. Logging not structured
+### 9. Logging not structured
 - Status: open
 - Remote: -
 
@@ -90,7 +90,7 @@
 - Impact: Hard observability
 - Suggested fix: Use structured logger
 
--### 10. AutoMigrate in production
+### 10. AutoMigrate in production
 - Status: open
 - Remote: -
 
@@ -100,7 +100,7 @@
 - Impact: Risky migrations
 - Suggested fix: Use versioned migrations
 
--### 11. Missing config validation
+### 11. Missing config validation
 - Status: open
 - Remote: -
 
@@ -110,7 +110,7 @@
 - Impact: Runtime failures
 - Suggested fix: Validate on startup
 
--### 12. Silent cache failures
+### 12. Silent cache failures
 - Status: open
 - Remote: -
 
@@ -120,7 +120,7 @@
 - Impact: Hidden degradation
 - Suggested fix: Add metrics or retry
 
--### 13. Duplicate constructor
+### 13. Duplicate constructor
 - Status: open
 - Remote: -
 
@@ -130,7 +130,7 @@
 - Impact: Redundant code
 - Suggested fix: Remove duplication
 
--### 14. Missing edge-case tests
+### 14. Missing edge-case tests
 - Status: open
 - Remote: -
 
@@ -140,7 +140,7 @@
 - Impact: Undetected bugs
 - Suggested fix: Expand test suite
 
--### 15. No observability/tracing
+### 15. No observability/tracing
 - Status: open
 - Remote: -
 
