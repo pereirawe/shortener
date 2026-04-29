@@ -12,8 +12,7 @@ post {
 
 body:json {
   {
-    "original_url": "https://produto.mercadolivre.com.br/MLB-5972208662-sapatos-femininos-de-malha-macia-sem-cadarco-antiderrapante-_JM",
-    "custom_code": "sapatilha"
+    "original_url": "https://www.mercadolivre.com.br/smart-tv-aiwa-32-android-hd-borda-ultrafina-hdr10-dolby-audio-aws-tv-32-bl-02-a/p/MLB19955269#polycard_client=recommendations_home_third-best-navigation-trend-recommendations&reco_backend=machinalis-homes-univb&wid=MLB4235529995&reco_client=home_third-best-navigation-trend-recommendations&reco_item_pos=0&reco_backend_type=function&reco_id=eb4f626d-8d33-42ce-87ac-747c40fd9610&sid=recos&c_id=/home/third-best-navigation-trend-recommendations/element&c_uid=f4d26c65-297c-46d3-ba41-0afa06d6c7f0"
   }
 }
 
@@ -23,46 +22,27 @@ vars:post-response {
 
 docs {
   # Create Short URL
-
-  Recebe uma URL longa e retorna uma versão encurtada.
-  Antes de salvar, faz uma requisição à URL original para validar a disponibilidade e extrair metadados SEO.
-
+  
+  Receives a long URL and returns a shortened version.
+  
   ## Request Body
-
-  | Campo        | Tipo   | Obrigatório | Descrição                                                        |
-  |--------------|--------|-------------|------------------------------------------------------------------|
-  | original_url | string | sim         | URL completa a ser encurtada (deve começar com http:// ou https://) |
-  | custom_code  | string | não         | Código personalizado (só letras e dígitos, máx. 12 caracteres)  |
-
-  ## Response 201
-
+  
+  | Field        | Type   | Required | Description          |
+  |--------------|--------|----------|----------------------|
+  | original_url | string | yes      | Full URL to shorten  |
+  
+  ## Response
+  
   ```json
   {
-    "short_code": "sapatilha",
-    "short_url": "http://localhost:8080/sapatilha",
-    "original_url": "https://produto.mercadolivre.com.br/...",
-    "url_available": true,
-    "seo_title": "Sapatos Femininos | MercadoLivre",
-    "seo_description": "...",
-    "seo_image": "https://..."
+    "short_code": "abc1234",
+    "short_url": "http://localhost:8080/abc1234",
+    "original_url": "https://www.example.com/very/long/url/that/needs/shortening"
   }
   ```
-
-  Quando a URL de destino estiver inacessível, `url_available` será `false` e virá um campo `warning`:
-
-  ```json
-  {
-    "url_available": false,
-    "warning": "the destination URL appears to be temporarily unavailable; the short link was created anyway"
-  }
-  ```
-
+  
   ## Errors
-
-  | Status | Motivo                                                              |
-  |--------|---------------------------------------------------------------------|
-  | 400    | `original_url` ausente, inválida ou sem prefixo http/https         |
-  | 400    | `custom_code` com espaço, caractere especial ou mais de 12 chars   |
-  | 409    | `custom_code` já está em uso                                       |
-  | 500    | Erro interno ao salvar                                              |
+  
+  - `400` — `original_url` is missing or invalid (must start with http:// or https://)
+  - `500` — Internal error while saving
 }
