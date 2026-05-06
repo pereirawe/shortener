@@ -18,10 +18,10 @@ This directory keeps supporting project workflow documentation and local helper 
 
 Preferred commands:
 ```
-make scan-issues
-make review
-make promote id=<n>
-make close-issue id=<n>
+make -f .config/opencode/Makefile scan-issues
+make -f .config/opencode/Makefile review
+make -f .config/opencode/Makefile promote id=<n>
+make -f .config/opencode/Makefile close-issue id=<n>
 ```
 
 Direct scripts:

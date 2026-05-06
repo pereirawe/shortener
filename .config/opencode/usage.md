@@ -56,7 +56,7 @@ git commit -m "fix: improve cache (#123)"
 ```
 5. Review:
 ```
-make review
+make -f .config/opencode/Makefile review
 /review-branch
 ```
 6. Close:
@@ -86,7 +86,7 @@ Example:
 
 2. Promote the local item when it is ready to be worked on:
 ```
-make promote id=6
+make -f .config/opencode/Makefile promote id=6
 ```
 
 3. Create remote issue:
@@ -102,14 +102,6 @@ make promote id=6
 
 ### Local Commands
 
-```
-make scan-issues
-make review
-make promote id=<n>
-make close-issue id=<n>
-```
-
-Alternative explicit form:
 ```
 make -f .config/opencode/Makefile scan-issues
 make -f .config/opencode/Makefile review
