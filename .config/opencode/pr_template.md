@@ -10,7 +10,7 @@
 - List potential risks introduced
 
 ## Known Issues Update
-- [ ] Updated `docs/ai/known_issues.md` (added/edited/removed entries)
+- [ ] Updated `.config/opencode/known_issues.md` (added/edited/removed entries)
 
 ## How to Test
 - Steps to validate

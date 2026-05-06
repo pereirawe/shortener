@@ -15,7 +15,7 @@ COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
 mkdir -p bin
 
 # Build the application
-go build -o bin/shortener .
+go build -o bin/shortener ./cmd/api
 
 echo "✓ Build completed successfully"
 echo "✓ Binary location: bin/shortener"

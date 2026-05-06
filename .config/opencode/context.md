@@ -236,15 +236,18 @@ go test -run TestShortenURL ./internal/api/... # filtro por nome
 ## Variáveis de ambiente (`.env`)
 
 ```env
-BASE_URL=http://localhost:8080
+API_BASE_URL=http://localhost:8080
+API_PORT=8080
 
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=shortener
-POSTGRES_PASSWORD=shortener
-POSTGRES_DB=shortener
+POSTGRES_PORT=5433
+POSTGRES_USER=shortener_user
+POSTGRES_PASSWORD=shortener_password
+POSTGRES_DB=shortener_db
 
-REDIS_ADDR=localhost:6379
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
 REDIS_PASSWORD=
 ```
 
@@ -256,6 +259,19 @@ REDIS_PASSWORD=
 docker compose up -d    # sobe Postgres + Redis
 docker compose down     # derruba
 ```
+
+---
+
+## Registro de trabalho
+
+- O projeto usa apenas `.config/opencode/known_issues.md` como registro local de trabalho.
+- Cada entrada deve incluir `Status`, `Type`, `Severity` e `Reported by`.
+- `Type` deve ser um de: `bug`, `feat`, `doc`, `chore`.
+- `Reported by` deve usar o nome do usuario quando a issue foi criada por uma pessoa, ou o nome do modelo quando a issue foi encontrada por uma IA.
+- Itens planejados ficam no mesmo arquivo com `Status: backlog` ou `ready`.
+- O comando `promote` move o `Status` para `open`, reseta `Remote` para `-` e o id remoto e definido depois por `create_issue.sh`.
+- O fluxo padrao de transicao e: `backlog -> ready -> open -> in-progress -> resolved`.
+- `backlog <-> ready` e reabertura de `resolved -> open` sao mudancas manuais no arquivo.
 
 ---
 

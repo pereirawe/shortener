@@ -1,31 +1,18 @@
 SHELL := /bin/bash
 
-.PHONY: scan-issues review help sync-issues close-issue promote
-
-help:
-	@echo "Targets:"
-	@echo "  make scan-issues  - run local scan + prompt assistant command"
-	@echo "  make review       - show git diff + prompt assistant command"
+.PHONY: scan-issues review sync-issues close-issue promote
 
 scan-issues:
-	@echo "[make] scan-issues"
-	@chmod +x scripts/scan_issues.sh || true
-	@./scripts/scan_issues.sh
-	@echo "\nNext step: run command in assistant -> /scan-issues"
+	@$(MAKE) -f .config/opencode/Makefile scan-issues
 
 review:
-	@echo "[make] review"
-	@git status --porcelain
-	@echo "\n--- DIFF (staged + unstaged) ---\n"
-	@git diff
-	@echo "\nNext step: run command in assistant -> /review-branch"
+	@$(MAKE) -f .config/opencode/Makefile review
 
 sync-issues:
-	@echo "[make] sync-issues (basic)"
-	@echo "This should reconcile local known_issues with remote issues (manual step for now)"
+	@$(MAKE) -f .config/opencode/Makefile sync-issues
 
 close-issue:
-	@./scripts/close_issue.sh $(id)
+	@$(MAKE) -f .config/opencode/Makefile close-issue id=$(id)
 
 promote:
-	@./scripts/promote.sh $(id)
+	@$(MAKE) -f .config/opencode/Makefile promote id=$(id)
