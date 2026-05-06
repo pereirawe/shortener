@@ -31,11 +31,11 @@ Operational rules:
 - `backlog <-> ready` and explicit reopen from `resolved` are manual editorial changes in `known_issues.md`.
 
 ### 1. Predictable short-code generation
-- Status: open
+- Status: in-progress
 - Type: bug
 - Severity: high
 - Reported by: openai/gpt-5.4
-- Remote: -
+- Remote: #2
 - Location: internal/api/handler.go:9,213-221
 - Description: Auto-generated short codes use `math/rand` via `rand.Intn`.
 - Impact: Codes are predictable and collision behavior is weaker than intended.
